@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>곧 만나요 - 오픈 알림 받기</title>
+<style>
+:root{--bg:#0f1115;--ink:#f2f3f5;--muted:#9aa3af;--line:#2a2f38;--accent:#4f7cff;--ok:#3ecf7a;--warn:#ffb84d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Noto Sans KR",sans-serif;background:radial-gradient(1200px 700px at 70% -10%,#1b2333 0%,var(--bg) 55%);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;word-break:keep-all}
+.wrap{width:min(92vw,560px);padding:40px 8px;text-align:center}
+.tag{display:inline-block;padding:.35em .9em;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:.85rem;margin-bottom:1.2rem}
+h1{font-size:clamp(1.9rem,5.5vw,2.8rem);line-height:1.25;letter-spacing:-.02em;margin-bottom:.8rem}
+h1 b{color:var(--accent)}
+.sub{color:var(--muted);line-height:1.8;margin-bottom:2rem}
+form{display:flex;gap:.6rem;max-width:440px;margin:0 auto}
+input{flex:1;font:inherit;padding:.85rem 1rem;border-radius:12px;border:1.5px solid var(--line);background:#171b22;color:var(--ink);min-width:0}
+input:focus{outline:none;border-color:var(--accent)}
+button{font:inherit;font-weight:700;padding:.85rem 1.3rem;border-radius:12px;border:0;background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap}
+button:disabled{opacity:.55;cursor:wait}
+.msg{margin-top:1.1rem;font-size:.95rem;line-height:1.7;min-height:1.6em}
+.msg.ok{color:var(--ok)}
+.msg.err{color:var(--warn)}
+.foot{margin-top:3rem;color:#5b636e;font-size:.8rem}
+.foot a{color:#5b636e}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="tag">Coming soon</span>
+  <h1>준비하고 있는 서비스,<br><b>먼저</b> 만나보세요</h1>
+  <p class="sub">이메일을 남기면 오픈하는 날 가장 먼저 알려드립니다.</p>
+
+  <form id="f">
+    <input id="email" type="email" required placeholder="이메일 주소" autocomplete="email">
+    <button id="btn" type="submit">알림 받기</button>
+  </form>
+  <p class="msg" id="msg"></p>
+
+  <p class="foot">등록하면 대기 명단(DB)에 저장되고, 확인 메일이 갑니다. <a href="/admin.html">admin</a></p>
+</div>
+
+<script>
+const f = document.getElementById("f"), btn = document.getElementById("btn"), msg = document.getElementById("msg");
+f.onsubmit = async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  btn.disabled = true; msg.className = "msg"; msg.textContent = "등록 중...";
+  try {
+    const r = await fetch("/api/waitlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const d = await r.json();
+    if (r.ok && d.ok) {
+      msg.className = "msg ok";
+      msg.textContent = d.duplicate
+        ? "이미 명단에 있어요. 오픈하면 알려드릴게요."
+        : "등록 완료! 확인 메일을 보냈어요. 받은편지함을 확인하세요.";
+      f.reset();
+    } else {
+      msg.className = "msg err";
+      msg.textContent = d.error || "등록에 실패했어요. 잠시 후 다시 시도해 주세요.";
+    }
+  } catch {
+    msg.className = "msg err";
+    msg.textContent = "서버에 닿지 못했어요. 잠시 후 다시 시도해 주세요.";
+  }
+  btn.disabled = false;
+};
+</script>
+</body>
+</html>
